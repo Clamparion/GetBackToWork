@@ -1,0 +1,8 @@
+@import '../styles/fonts';
+@import '../styles/reset';
+@import '../styles/variables';
+
+
+body {
+  @apply p-5  dark:bg-gray-900;
+}

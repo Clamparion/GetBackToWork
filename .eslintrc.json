@@ -1,0 +1,36 @@
+{
+	"extends": [
+		"@clamparion/eslint-config/typescript",
+		"@clamparion/eslint-config/node",
+		"@clamparion/eslint-config/react"
+	],
+	"parserOptions": {
+		"project": [
+			"./tsconfig.json"
+		],
+		"sourceType": "module"
+	},
+	"plugins": ["prettier"],
+	"rules": {
+		"no-console": "off",
+		"prettier/prettier": "error",
+		"no-extend-native": "off",
+		"react/jsx-props-no-spreading": "off",
+		"jsx-a11y/label-has-associated-control": "off",
+		"class-methods-use-this": "off",
+		"max-classes-per-file": "off",
+		"node/no-missing-import": "off",
+		"node/no-unpublished-import": "off",
+		"node/no-unsupported-features/es-syntax": ["error", {
+			"ignores": ["modules"]
+		}]
+	},
+	"env": {
+		"webextensions": true
+	},
+	"settings": {
+		"node": {
+			"tryExtensions": [".tsx"] // append tsx to the list as well
+		}
+	}
+}
