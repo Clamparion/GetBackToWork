@@ -1,5 +1,8 @@
 /* eslint-disable default-case */
 
+import {browser} from 'webextension-polyfill-ts';
+import {BlockedSite} from '../Models/blocked-site';
+
 const generateSTYLES = (): string => {
   return `<style>@import url(https://fonts.googleapis.com/css?family=opensans:500);
     body {
@@ -253,31 +256,20 @@ const generateHTML = (pageName: string): string => {
      `;
 };
 
-switch (window.location.hostname) {
-  case 'www.youtube.com':
-    document.head.innerHTML = generateSTYLES();
-    document.body.innerHTML = generateHTML('YOUTUBE');
-    break;
-  case 'www.facebook.com':
-    document.head.innerHTML = generateSTYLES();
-    document.body.innerHTML = generateHTML('FACEBOOK');
-    break;
-  case 'www.twitter.com':
-    document.head.innerHTML = generateSTYLES();
-    document.body.innerHTML = generateHTML('TWITTER');
-    break;
-  case 'www.instagram.com':
-    document.head.innerHTML = generateSTYLES();
-    document.body.innerHTML = generateHTML('INSTAGRAM');
-    break;
-  case 'discord.com':
-    document.head.innerHTML = generateSTYLES();
-    document.body.innerHTML = generateHTML('DISCORD');
-    break;
-  case 'www.spotify.com':
-    document.head.innerHTML = generateSTYLES();
-    document.body.innerHTML = generateHTML('SPOTIFY');
-    break;
-}
+const run = async (): Promise<void> => {
+  const data = await browser.storage.sync.get('blockedSites');
+  const blockedSites: BlockedSite[] = data.blockedSites;
+
+  const hostname = window.location.hostname.replaceAll('www.', '');
+
+  for (const blockedSite of blockedSites) {
+    if (hostname === blockedSite.domain) {
+      document.head.innerHTML = generateSTYLES();
+      document.body.innerHTML = generateHTML(blockedSite.domain);
+    }
+  }
+};
+
+run().then();
 
 export {};

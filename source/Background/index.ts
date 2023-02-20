@@ -13,10 +13,10 @@ async function initSetup(): Promise<void> {
   if (!Array.isArray(data.blockedSites)) {
     await browser.storage.sync.set({
       blockedSites: [
-        {domain: 'www.youtube.com', timeLimitInMinutes: 5, id: uuidv4()},
-        {domain: 'www.facebook.com', timeLimitInMinutes: 5, id: uuidv4()},
-        {domain: 'www.twitter.com', timeLimitInMinutes: 5, id: uuidv4()},
-        {domain: 'www.instagram.com', timeLimitInMinutes: 5, id: uuidv4()},
+        {domain: 'youtube.com', timeLimitInMinutes: 5, id: uuidv4()},
+        {domain: 'facebook.com', timeLimitInMinutes: 5, id: uuidv4()},
+        {domain: 'twitter.com', timeLimitInMinutes: 5, id: uuidv4()},
+        {domain: 'instagram.com', timeLimitInMinutes: 5, id: uuidv4()},
       ] as BlockedSite[],
     });
   }
