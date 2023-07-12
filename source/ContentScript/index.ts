@@ -1,7 +1,9 @@
 /* eslint-disable default-case */
 
 import {browser} from 'webextension-polyfill-ts';
-import {BlockedSite} from '../Models/blocked-site';
+import {Logger} from '../Logger';
+import {BlockedSiteDto} from '../Models/blocked-site.dto';
+import {ContentScript} from './content-script';
 
 const generateSTYLES = (): string => {
   return `<style>@import url(https://fonts.googleapis.com/css?family=opensans:500);
@@ -251,25 +253,39 @@ const generateHTML = (pageName: string): string => {
         <div class='_404'>404</div>
         <hr>
         <div class='_1'>GET BACK TO WORK</div>
-        <div class='_2'>STUDYING > ${pageName}</div>
+        <div class='_2'>You reached your daily limit on this page: ${pageName}</div>
     </div>
      `;
 };
 
+new ContentScript().init();
+
 const run = async (): Promise<void> => {
   const data = await browser.storage.sync.get('blockedSites');
-  const blockedSites: BlockedSite[] = data.blockedSites;
+  const blockedSites: BlockedSiteDto[] = data.blockedSites;
 
-  const hostname = window.location.hostname.replaceAll('www.', '');
+  const hostname = window.location.hostname;
+
+  Logger.log('nice Aller: ' + hostname);
 
   for (const blockedSite of blockedSites) {
-    if (hostname === blockedSite.domain) {
+    if (hostname.endsWith(blockedSite.domain)) {
+      try {
+        for (
+          var i = 0, atts = document.body.attributes, n = atts.length;
+          i < n;
+          i++
+        ) {
+          if (atts[i] && atts[i].nodeName) {
+            document.body.removeAttribute(atts[i].nodeName);
+          }
+        }
+      } catch (error) {}
       document.head.innerHTML = generateSTYLES();
       document.body.innerHTML = generateHTML(blockedSite.domain);
     }
   }
 };
-
-run().then();
+run().then(() => {});
 
 export {};

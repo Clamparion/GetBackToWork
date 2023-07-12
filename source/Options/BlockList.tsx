@@ -1,18 +1,20 @@
 import React, {useState, useEffect} from 'react';
-import {browser} from 'webextension-polyfill-ts';
-import {BlockedSite} from '../Models/blocked-site';
+import {BlockedSiteDto} from '../Models/blocked-site.dto';
 import DeleteIconButton from '../UI/DeleteIconButton';
 import {v4 as uuidv4} from 'uuid';
+import {BackgroundMessages, Messenger} from '../Messenger';
 
 const BlockList: React.FC = () => {
-  const [blockedSites, setBlockedSites] = useState<BlockedSite[]>([]);
+  const [blockedSites, setBlockedSites] = useState<BlockedSiteDto[]>([]);
 
   useEffect(() => {
-    browser.storage.sync
-      .get('blockedSites')
-      .then((response: unknown) =>
-        setBlockedSites((response as any).blockedSites as BlockedSite[])
-      );
+    Messenger.sendMessageToBackground(
+      BackgroundMessages.GET_BLOCKED_SITES,
+      {}
+    ).then((response: BlockedSiteDto[]) => {
+      console.log('loaded initial', response);
+      setBlockedSites(response)
+    });
   }, []);
 
   const setBlockedDomain = (id: string, newValue: string) => {
@@ -50,30 +52,34 @@ const BlockList: React.FC = () => {
       domain: '',
       timeLimitInMinutes: 5,
       id: uuidv4(),
-    } as BlockedSite;
+    } as BlockedSiteDto;
 
     setBlockedSites([...blockedSites, newBlockedSite]);
   };
 
   React.useEffect(() => {
     const saveData = setTimeout(() => {
-      browser.storage.sync
-        .set({
-          blockedSites: blockedSites
-            .map((b) => {
-              const blockedSite = b;
+      const blockedSitesNew = blockedSites
+        .map((b) => {
+          const blockedSite = b;
 
-              blockedSite.domain = blockedSite.domain
-                .replaceAll('https://', '')
-                .replaceAll('http://', '')
-                .replaceAll('www.', '')
-                .replace(/\/$/, '');
+          blockedSite.domain = blockedSite.domain
+            .replaceAll('https://', '')
+            .replaceAll('http://', '')
+            .replaceAll('www.', '')
+            .replace(/\/$/, '');
 
-              return blockedSite;
-            })
-            .filter((b) => b.domain.trim().length > 0),
+          return blockedSite;
         })
-        .then(() => {});
+        .filter((b) => b.domain.trim().length > 0);
+      Messenger.sendMessageToBackground(
+        BackgroundMessages.UPDATE_BLOCKED_SITES,
+        {
+          message: blockedSitesNew,
+        }
+      ).then((response) => {
+        console.log('updated successfully', response);
+      });
     }, 200);
 
     return () => clearTimeout(saveData);
