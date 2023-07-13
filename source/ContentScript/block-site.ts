@@ -2,14 +2,17 @@
 
 export class BlockSite {
   block(blockedDomain: string) {
+
+    console.log('sheessh', blockedDomain);
+
     try {
       for (
-        var i = 0, atts = document.body.attributes, n = atts.length;
+        var i = 0, attrs = document.body.attributes, n = attrs.length;
         i < n;
         i++
       ) {
-        if (atts[i] && atts[i].nodeName) {
-          document.body.removeAttribute(atts[i].nodeName);
+        if (attrs[i] && attrs[i].nodeName) {
+          document.body.removeAttribute(attrs[i].nodeName);
         }
       }
     } catch (error) {}

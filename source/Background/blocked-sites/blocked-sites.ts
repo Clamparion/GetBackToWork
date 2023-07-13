@@ -1,9 +1,12 @@
 import {browser} from 'webextension-polyfill-ts';
 import {BlockedSiteDto} from '../../Models/blocked-site.dto';
 import {v4 as uuidv4} from 'uuid';
+import {BlockedSitesSubscriber} from './blocked-sites-subscriber';
 
 export class BlockedSites {
   private currentBlockedSites?: BlockedSiteDto[];
+
+  private subscribers: BlockedSitesSubscriber[] = [];
 
   async initializeBlockedSites() {
     const data = await browser.storage.sync.get('blockedSites');
@@ -35,15 +38,34 @@ export class BlockedSites {
     return this.loadCurrentBlockedSitesFromStorage();
   }
 
+  addSubscribers(subscribers: BlockedSitesSubscriber[]) {
+    this.subscribers.push(...subscribers);
+    this.updateSubscribers().then(() => {});
+  }
+
+  addSubscriber(subscriber: BlockedSitesSubscriber) {
+    this.subscribers.push(subscriber);
+    this.updateSubscribers().then(() => {});
+  }
+
+  async updateSubscribers(): Promise<void> {
+    const currentBlockedSites = await this.getBlockedSites();
+    this.subscribers.forEach((s) => {
+      s.blockedSitesUpdated(currentBlockedSites);
+    });
+  }
+
   private async loadCurrentBlockedSitesFromStorage(): Promise<
     BlockedSiteDto[]
   > {
+    let newBlockedSites: BlockedSiteDto[] = [];
     const data = await browser.storage.sync.get('blockedSites');
     if (Array.isArray(data.blockedSites)) {
-      this.currentBlockedSites = data.blockedSites as BlockedSiteDto[];
-      return this.currentBlockedSites;
+      newBlockedSites = data.blockedSites as BlockedSiteDto[];
     }
-    this.currentBlockedSites = [];
+
+    this.currentBlockedSites = newBlockedSites;
+    await this.updateSubscribers();
     return this.currentBlockedSites;
   }
 }
