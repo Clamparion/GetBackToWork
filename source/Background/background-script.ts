@@ -80,7 +80,7 @@ export class BackgroundScript {
     self: BackgroundScript,
     url: string
   ): Promise<IsBlockedMessagePayload> {
-    return Promise.resolve(self.blockedSitesToday.isSiteBlocked(url));
+    return self.blockedSitesToday.isSiteBlocked(url);
   }
 
   private registerMessageReceivers() {

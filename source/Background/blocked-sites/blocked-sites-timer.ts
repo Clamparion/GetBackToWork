@@ -50,7 +50,7 @@ export class BlockedSitesTimer implements BlockedSitesSubscriber {
 
     for (const domain of currentActiveBlockedSites.keys()) {
       if (this.previousActiveBlockedSites.get(domain)) {
-        this.blockedSitesToday.addElapsedTimeForDomain(
+        await this.blockedSitesToday.addElapsedTimeForDomain(
           domain,
           this.timeIntervalMs
         );
@@ -89,7 +89,6 @@ export class BlockedSitesTimer implements BlockedSitesSubscriber {
   private startTimer() {
     if (this.timer !== undefined) return;
     this.timer = setInterval(() => {
-      console.log('timer is running lol');
       this.measureTimeForActiveBlockedSites();
     }, this.timeIntervalMs);
   }

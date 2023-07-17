@@ -4,6 +4,7 @@ import {BlockedSitesSubscriber} from './blocked-sites-subscriber';
 import {Dates} from './dates';
 import {BlockedSitesMatcher} from './blocked-sites-matcher';
 import {ContentScriptMessages, Messenger} from '../../Messenger';
+import {Logger} from '../../Logger/logger';
 
 export type IsBlockedMessagePayload = {
   message: {
@@ -17,6 +18,8 @@ export class BlockedSitesToday implements BlockedSitesSubscriber {
   private blockedSitesElapsedTimeMap = new Map<string, number>();
   private blockedSitesForToday = new Map<string, boolean>();
 
+  private previousStorageKey?: string;
+
   constructor(private readonly matcher: BlockedSitesMatcher) {}
 
   blockedSitesUpdated(blockedSites: BlockedSiteDto[]): void {
@@ -28,26 +31,28 @@ export class BlockedSitesToday implements BlockedSitesSubscriber {
       );
     }
 
-    console.log('BlockedSitesStats sites updated', blockedSites);
-
     this.loadTodayElapsedTimeMap().then(() => {});
   }
 
-  addElapsedTimeForDomain(domain: string, elapsedTimeInMs: number) {
+  async addElapsedTimeForDomain(domain: string, elapsedTimeInMs: number) {
+    await this.checkIsDataNeedRefresh();
+
     if (!this.blockedSitesTimeBudgetMap.has(domain)) return;
 
     const totalElapsedTime = this.blockedSitesElapsedTimeMap.get(domain);
     if (totalElapsedTime === undefined) return;
+
+    Logger.info(`${totalElapsedTime} ms elapsed for ${domain}`);
 
     this.blockedSitesElapsedTimeMap.set(
       domain,
       totalElapsedTime + elapsedTimeInMs
     );
 
-    this.checkRemainingTimeForDomain(domain);
+    await this.checkRemainingTimeForDomain(domain);
   }
 
-  checkRemainingTimeForDomain(domain: string) {
+  async checkRemainingTimeForDomain(domain: string) {
     const elapsedTime = this.blockedSitesElapsedTimeMap.get(domain);
     const timeBudget = this.blockedSitesTimeBudgetMap.get(domain);
     if (elapsedTime === undefined || timeBudget === undefined) return;
@@ -56,18 +61,32 @@ export class BlockedSitesToday implements BlockedSitesSubscriber {
       const currentBlockState = this.blockedSitesForToday.get(domain);
       if (currentBlockState === undefined || currentBlockState === false) {
         this.blockedSitesForToday.set(domain, true);
-        this.sendBlockSitesMessages().then(() => {});
+        await this.sendBlockSitesMessages();
       }
     } else {
       this.blockedSitesForToday.set(domain, false);
     }
   }
 
-  isSiteBlocked(url: string): IsBlockedMessagePayload {
+  async checkIsDataNeedRefresh() {
+    const currentStorageKey = this.getTodayStorageKey();
+    if (this.previousStorageKey !== currentStorageKey) {
+      Logger.info(
+        `day changed to from ${this.previousStorageKey} to ${currentStorageKey}`
+      );
+      await this.loadTodayElapsedTimeMap();
+      this.previousStorageKey = currentStorageKey;
+    }
+  } 
+
+  async isSiteBlocked(url: string): Promise<IsBlockedMessagePayload> {
+
     const matchedBlockedSite = this.matcher.matchesUrl(url);
 
     if (matchedBlockedSite) {
-      this.checkRemainingTimeForDomain(matchedBlockedSite.domain);
+
+      await this.checkIsDataNeedRefresh();
+      await this.checkRemainingTimeForDomain(matchedBlockedSite.domain);
 
       const isBlocked = this.blockedSitesForToday.get(
         matchedBlockedSite.domain
@@ -151,7 +170,7 @@ export class BlockedSitesToday implements BlockedSitesSubscriber {
     this.blockedSitesElapsedTimeMap = map;
 
     for (const domain of this.blockedSitesElapsedTimeMap.keys()) {
-      this.checkRemainingTimeForDomain(domain);
+      await this.checkRemainingTimeForDomain(domain);
     }
 
     return map;

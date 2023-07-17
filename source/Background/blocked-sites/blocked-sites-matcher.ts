@@ -1,3 +1,4 @@
+import {Logger} from '../../Logger/logger';
 import {BlockedSiteDto} from '../../Models/blocked-site.dto';
 import {BlockedSitesSubscriber} from './blocked-sites-subscriber';
 
@@ -36,7 +37,7 @@ export class BlockedSitesMatcher implements BlockedSitesSubscriber {
       }
       return null;
     } catch (error) {
-      console.log(error);
+      Logger.error(error);
       return null;
     }
   }
